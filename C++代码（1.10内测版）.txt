@@ -1,0 +1,67 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <iostream>
+#include <string>
+#include <cmath>
+#include <thread>
+#include <chrono>
+
+// Function to display a progress bar
+void displayProgressBar(int waitTime, bool& stopFlag) {
+    int totalTicks = waitTime * 5; // 5 ticks per second (0.2s per tick)
+    for (int i = 0; i <= totalTicks; ++i) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200)); // 0.2s sleep
+        if (stopFlag && i >= totalTicks / 5) { // Stop at 20%
+            break;
+        }
+        std::cout << "\rcomputing: [";
+        for (int j = 0; j < i; ++j) std::cout << "=";
+        for (int j = i; j < totalTicks; ++j) std::cout << " ";
+        std::cout << "] " << i * 100 / totalTicks << "%";
+    }
+    std::cout << std::endl;
+}
+
+// Function to parse a linear equation of the form ax + by = e
+bool parseEquation(const std::string& equation, double& a, double& b, double& e) {
+    char x, y, eq;
+    return std::sscanf(equation.c_str(), "%lfx%lfy%c%lf", &a, &b, &eq, &e) == 4;
+}
+
+// Function to solve a system of linear equations of the form ax + by = e and cx + dy = f
+void solveSystemOfEquations(const std::string& equation1, const std::string& equation2) {
+    double a, b, e, c, d, f;
+    char x, y;
+    bool stopFlag = false;
+    if (parseEquation(equation1, a, b, e) && parseEquation(equation2, c, d, f)) {
+        double det = a * d - b * c;
+        if (det == 0) {
+            displayProgressBar(3, stopFlag);
+            std::cout << "No solution or infinite solutions" << std::endl;
+        }
+        else {
+            double x = (e * d - b * f) / det;
+            double y = (a * f - e * c) / det;
+            displayProgressBar(3, stopFlag);
+            std::cout << "Solution: x = " << x << ", y = " << y << std::endl;
+        }
+    }
+    else {
+        stopFlag = true;
+        displayProgressBar(3, stopFlag);
+        std::cout << "Invalid equation format. Please enter a valid linear system of equations." << std::endl;
+    }
+}
+
+int main() {
+    std::string equation1, equation2;
+    while (true) {
+        std::cout << "Enter the first linear equation (for example, 2x+3y=4):";
+        std::getline(std::cin, equation1);
+        if (equation1 == "exit") break;
+        std::cout << "Enter the second linear equation (for example, 5x+6y=7):";
+        std::getline(std::cin, equation2);
+        if (equation2 == "exit") break;
+        solveSystemOfEquations(equation1, equation2);
+    }
+    return 0;
+}
