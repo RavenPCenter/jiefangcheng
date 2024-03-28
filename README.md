@@ -1,6 +1,6 @@
-# jiefangcheng
-一个可以解方程的软件，正在不断更新，代码公开（C++）
+# A software that can solve equations, is constantly being updated, and the code is public (C++)
 
 
+A software that can solve equations, is constantly being updated, and the code is public (C++)
 
-1.0内测版太古老，文件后来丢失了，最新的只有1.10
+The 1.0 internal beta version was too old and the files were later lost. The latest version is only 1.10.
