@@ -1,0 +1,89 @@
+#include <iostream>
+#include <string>
+#include <cmath>
+#include <thread>
+#include <chrono>
+#include <fstream>
+
+// Color codes for console output
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+// Function to display a progress bar
+void displayProgressBar(int waitTime, bool& stopFlag, std::ofstream& logfile) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(500)); // Wait for 0.5 seconds
+    std::cout << ANSI_COLOR_GREEN << "API connection successful" << ANSI_COLOR_RESET << std::endl;
+    logfile << "API connection successful" << std::endl;
+    int totalTicks = static_cast<int>(waitTime * 30); // 10 ticks per second (0.1s per tick)
+    for (int i = 0; i <= totalTicks; ++i) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(35)); // 0.1s sleep
+        if (stopFlag && i >= totalTicks / 5) { // Stop at 20%
+            break;
+        }
+        std::cout << "\rCalculating: [";
+        for (int j = 0; j < i; ++j) std::cout << "=";
+        for (int j = i; j < totalTicks; ++j) std::cout << " ";
+        std::cout << "] " << i * 100 / totalTicks << "%";
+    }
+    std::cout << std::endl;
+}
+
+// Function to parse a linear equation of the form ax + by = c
+bool parseEquation(const std::string& equation, double& a, double& b, double& c) {
+    char x, y, eq;
+    return sscanf_s(equation.c_str(), "%lfx%lfy%c%lf", &a, &b, &eq, 1, &c) == 4;
+}
+
+// Function to parse a linear equation of the form ax + by + cz = d
+bool parseEquation(const std::string& equation, double& a, double& b, double& c, double& d) {
+    char x, y, z, eq;
+    return sscanf_s(equation.c_str(), "%lfx%lfy%lfz%c%lf", &a, &b, &c, &eq, 1, &d) == 5;
+}
+
+// Function to solve a system of linear equations of the form ax + by = c and dx + ey = f
+void solveSystemOfEquations(const std::string& equation1, const std::string& equation2, std::ofstream& logfile) {
+    double a, b, c, d, e, f;
+    char x, y, z;
+    bool stopFlag = false;
+    if (parseEquation(equation1, a, b, c) && parseEquation(equation2, d, e, f)) {
+        double det = a * e - b * d;
+        if (det == 0) {
+            displayProgressBar(1.4, stopFlag, logfile);
+            std::cout << ANSI_COLOR_RED << "No solution or infinite solutions" << ANSI_COLOR_RESET << std::endl;
+            logfile << "No solution or infinite solutions" << std::endl;
+        }
+        else {
+            double x = (c * e - b * f) / det;
+            double y = (a * f - c * d) / det;
+            displayProgressBar(1.4, stopFlag, logfile);
+            std::cout << std::endl << "Solution: " << ANSI_COLOR_BLUE << "x = " << x << ", y = " << y << ANSI_COLOR_RESET << std::endl;
+            logfile << "Solution: x = " << x << ", y = " << y << std::endl;
+        }
+    }
+    else {
+        stopFlag = true;
+        displayProgressBar(1.4, stopFlag, logfile);
+        std::cout << std::endl << ANSI_COLOR_RED << "Invalid equation format. Please enter valid linear equations." << ANSI_COLOR_RESET << std::endl;
+        logfile << "Invalid equation format. Please enter valid linear equations." << std::endl;
+    }
+    std::cout << "----------------------------------------" << std::endl << std::endl;
+    logfile << "----------------------------------------" << std::endl << std::endl;
+}
+
+int main() {
+    std::ofstream logfile("logs.txt"); // Open the log file
+    std::string equation1, equation2;
+    while (true) {
+        std::cout << "Enter the first linear equation (e.g., 2x+3y=4): ";
+        std::getline(std::cin >> std::ws, equation1); // Skip whitespace
+        if (equation1 == "exit") break;
+        std::cout << "Enter the second linear equation (e.g., 5x+6y=7): ";
+        std::getline(std::cin >> std::ws, equation2); // Skip whitespace
+        if (equation2 == "exit") break;
+        solveSystemOfEquations(equation1, equation2, logfile);
+    }
+    logfile.close(); // Close the log file before exiting
+    return 0;
+}
