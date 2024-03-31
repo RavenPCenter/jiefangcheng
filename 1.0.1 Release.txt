@@ -1,0 +1,139 @@
+#include <iostream>
+#include <string>
+#include <cmath>
+#include <thread>
+#include <chrono>
+#include <fstream>
+#include <vector>
+
+// Color codes for console output
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+// Function to display a progress bar
+void displayProgressBar(int waitTime, bool& stopFlag, std::ofstream& logfile) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(500)); // Wait for 0.5 seconds
+    std::cout << ANSI_COLOR_GREEN << "API连接成功" << ANSI_COLOR_RESET << std::endl;
+    logfile << "API连接成功" << std::endl;
+    int totalTicks = static_cast<int>(waitTime * 30); // 10 ticks per second (0.1s per tick)
+    for (int i = 0; i <= totalTicks; ++i) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(42)); // 0.1s sleep
+        if (stopFlag && i >= totalTicks / 5) { // Stop at 20%
+            break;
+        }
+        std::cout << "\r计算中: [";
+        for (int j = 0; j < i; ++j) std::cout << "=";
+        for (int j = i; j < totalTicks; ++j) std::cout << " ";
+        std::cout << "] " << i * 100 / totalTicks << "%";
+    }
+    std::cout << std::endl;
+}
+
+// Function to parse a linear equation of the form ax + by = c
+bool parseEquation(const std::string& equation, std::vector<double>& coefficients) {
+    size_t pos = equation.find('=');
+    if (pos == std::string::npos) return false;
+
+    std::string lhs = equation.substr(0, pos);
+    std::string rhs = equation.substr(pos + 1);
+
+    coefficients.resize(3, 0.0);
+
+    size_t xpos = lhs.find('x');
+    size_t ypos = lhs.find('y');
+
+    size_t prev_pos = 0;
+    size_t next_pos = 0;
+    while (next_pos != std::string::npos) {
+        next_pos = lhs.find_first_of("+-", prev_pos + 1);
+
+        std::string term = (next_pos == std::string::npos) ? lhs.substr(prev_pos) : lhs.substr(prev_pos, next_pos - prev_pos);
+
+        size_t x_index = term.find('x');
+        size_t y_index = term.find('y');
+
+        double coefficient = 0.0;
+
+        if (x_index != std::string::npos) {
+            if (x_index == 0) {
+                coefficient = 1.0;
+            }
+            else if (term[x_index - 1] == '-') {
+                coefficient = -1.0;
+            }
+            else {
+                coefficient = std::stod(term.substr(0, x_index));
+            }
+        }
+        else if (y_index != std::string::npos) {
+            if (y_index == 0) {
+                coefficient = 1.0;
+            }
+            else if (term[y_index - 1] == '-') {
+                coefficient = -1.0;
+            }
+            else {
+                coefficient = std::stod(term.substr(0, y_index));
+            }
+        }
+        else {
+            coefficient = std::stod(term);
+        }
+
+        coefficients[0] += coefficient * (y_index == std::string::npos ? 0.0 : (x_index == std::string::npos ? 1.0 : 0.0));
+        coefficients[1] += coefficient * (x_index == std::string::npos ? 0.0 : (y_index == std::string::npos ? 1.0 : 0.0));
+        coefficients[2] -= coefficient;
+
+        prev_pos = next_pos;
+    }
+
+    return true;
+}
+
+// Function to solve a system of linear equations of the form ax + by = c and dx + ey = f
+void solveSystemOfEquations(const std::string& equation1, const std::string& equation2, std::ofstream& logfile) {
+    std::vector<double> eq1_coeffs(3), eq2_coeffs(3);
+
+    bool stopFlag = false;
+    if (parseEquation(equation1, eq1_coeffs) && parseEquation(equation2, eq2_coeffs)) {
+        double det = eq1_coeffs[0] * eq2_coeffs[1] - eq1_coeffs[1] * eq2_coeffs[0];
+        if (det == 0) {
+            displayProgressBar(1.4, stopFlag, logfile);
+            std::cout << ANSI_COLOR_RED << "无解或无穷解" << ANSI_COLOR_RESET << std::endl;
+            logfile << "无解或无穷解" << std::endl;
+        }
+        else {
+            double x = (eq1_coeffs[2] * eq2_coeffs[1] - eq1_coeffs[1] * eq2_coeffs[2]) / det;
+            double y = (eq1_coeffs[0] * eq2_coeffs[2] - eq1_coeffs[2] * eq2_coeffs[0]) / det;
+            displayProgressBar(1.4, stopFlag, logfile);
+            std::cout << std::endl << "解为: " << ANSI_COLOR_BLUE << "x = " << x << ", y = " << y << ANSI_COLOR_RESET << std::endl;
+            logfile << "解为: x = " << x << ", y = " << y << std::endl;
+        }
+    }
+    else {
+        stopFlag = true;
+        displayProgressBar(1.4, stopFlag, logfile);
+        std::cout << std::endl << ANSI_COLOR_RED << "无效方程格式，请输入有效的线性方程。" << ANSI_COLOR_RESET << std::endl;
+        logfile << "无效方程格式，请输入有效的线性方程。" << std::endl;
+    }
+    std::cout << "----------------------------------------" << std::endl << std::endl;
+    logfile << "----------------------------------------" << std::endl << std::endl;
+}
+
+int main() {
+    std::ofstream logfile("logs.txt"); // Open the log file
+    std::string equation1, equation2;
+    while (true) {
+        std::cout << "输入第一个线性方程 (例如，2x+3y=4): ";
+        std::getline(std::cin >> std::ws, equation1); // Skip whitespace
+        if (equation1 == "exit") break;
+        std::cout << "输入第二个线性方程 (例如，5x+6y=7): ";
+        std::getline(std::cin >> std::ws, equation2); // Skip whitespace
+        if (equation2 == "exit") break;
+        solveSystemOfEquations(equation1, equation2, logfile);
+    }
+    logfile.close(); // Close the log file before exiting
+    return 0;
+}
