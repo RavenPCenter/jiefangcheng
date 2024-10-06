@@ -1,4 +1,6 @@
-# A software that can solve equations, is constantly being updated, and the code is public (C++)
+# A software that can solve equations, and the code is public (C++)
+Updates have been stopped
+
 
 
 A software that can solve equations, is constantly being updated, and the code is public (C++)
